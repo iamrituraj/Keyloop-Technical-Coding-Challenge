@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyloop Unified Service Scheduler | Enterprise Workshop Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css?v=2.0">
+</head>
+<body>
+  <!-- Header / Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-group">
+        <div class="brand-badge">KEYLOOP</div>
+        <div class="product-title">
+          <h1>Unified Service Scheduler</h1>
+          <span class="subtitle">Multi-Resource Constraint Allocation Engine</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <div class="system-status">
+          <span class="pulse-indicator"></span>
+          <span id="api-status-text">Backend Connected</span>
+        </div>
+        <button id="theme-toggle-btn" style="display:none;" aria-hidden="true"></button>
+        <button id="reset-db-btn" class="secondary-btn" title="Reset Demo Data">🔄 Reset Data</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="main-container">
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-booking">
+        <span class="tab-icon">📅</span> Service Booking Portal
+      </button>
+      <button class="tab-btn" data-tab="tab-dispatch">
+        <span class="tab-icon">📋</span> Workshop Dispatch Board (<span id="active-bookings-count">0</span>)
+      </button>
+      <button class="tab-btn" data-tab="tab-resources">
+        <span class="tab-icon">🔧</span> Bays & Certified Technicians
+      </button>
+      <button class="tab-btn highlight" data-tab="tab-simulation">
+        <span class="tab-icon">⚡</span> Race Condition & Stress Simulator
+      </button>
+    </nav>
+
+    <!-- Tab 1: Booking Portal -->
+    <section id="tab-booking" class="tab-content active">
+      <div class="grid-layout">
+        <!-- Configuration Card -->
+        <div class="card form-card">
+          <div class="card-header">
+            <h2>1. Configure Service & Resources</h2>
+            <p>Select dealership, service package, and vehicle specs.</p>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="dealership-select">Dealership Network Location</label>
+              <select id="dealership-select" class="form-control">
+                <option value="DLR-001">Keyloop Prime Auto — Hyderabad Tech Hub [09:00 - 19:00 IST]</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="service-select">Required Service Type</label>
+              <select id="service-select" class="form-control">
+                <!-- Populated dynamically -->
+              </select>
+              <div id="service-meta-badge" class="meta-pill-container"></div>
+            </div>
+
+            <hr class="divider">
+
+            <div class="card-header sub-header">
+              <h3>Vehicle & Customer Details</h3>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col">
+                <label for="vin-input">Registration No. (e.g. TS 09 EA 4521) / VIN</label>
+                <div class="input-with-action">
+                  <input type="text" id="vin-input" class="form-control mono" value="TS 09 EA 4521" maxlength="20" placeholder="e.g. TS 09 EA 4521 or VIN">
+                  <button id="quick-vin-btn" class="mini-btn" title="Toggle EV / ICE Sample Plate">⚡ Sample</button>
+                </div>
+              </div>
+              <div class="form-group col">
+                <label for="vehicle-model-input">Vehicle Make / Model</label>
+                <input type="text" id="vehicle-model-input" class="form-control" value="Tata Nexon EV Max Long Range" placeholder="Make and model">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col">
+                <label for="customer-name-input">Customer Full Name</label>
+                <input type="text" id="customer-name-input" class="form-control" value="Rajesh Malhotra" placeholder="Full name">
+              </div>
+              <div class="form-group col">
+                <label for="customer-email-input">Customer Email</label>
+                <input type="email" id="customer-email-input" class="form-control" value="rajesh.malhotra@example.com" placeholder="email@address.com">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="booking-date-picker">Target Booking Date</label>
+              <input type="date" id="booking-date-picker" class="form-control">
+            </div>
+
+            <button id="query-availability-btn" class="primary-btn full-width">
+              <span>🔍 Check Real-Time Resource Availability</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Available Slots & Confirmation Card -->
+        <div class="card slots-card">
+          <div class="card-header">
+            <h2>2. Real-Time Slot Matrix</h2>
+            <p>Guaranteed simultaneous availability of Bay + Certified Tech.</p>
+          </div>
+          <div class="card-body">
+            <div id="slots-loading" class="loading-state hidden">
+              <div class="spinner"></div>
+              <p>Evaluating dual-resource availability matrix...</p>
+            </div>
+
+            <div id="slots-container" class="slots-grid">
+              <div class="empty-state">
+                <div class="empty-icon">📅</div>
+                <p>Click <strong>"Check Real-Time Resource Availability"</strong> to generate valid continuous booking windows.</p>
+              </div>
+            </div>
+
+            <div id="selected-slot-preview" class="selected-slot-banner hidden">
+              <div class="banner-content">
+                <div>
+                  <span class="banner-tag">SELECTED TIME WINDOW</span>
+                  <h4 id="selected-slot-time">-- : --</h4>
+                  <div class="banner-allocations" id="selected-slot-allocations"></div>
+                </div>
+                <button id="confirm-booking-btn" class="success-btn">
+                  <span>✓ Confirm & Persist Appointment</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="booking-feedback" class="feedback-banner hidden"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: Workshop Dispatch Board -->
+    <section id="tab-dispatch" class="tab-content">
+      <div class="card">
+        <div class="card-header flex-between">
+          <div>
+            <h2>Workshop Dispatch Board</h2>
+            <p>Persistent schedule of confirmed customer appointments.</p>
+          </div>
+          <button id="refresh-appointments-btn" class="secondary-btn">↻ Refresh Board</button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Appointment Ref</th>
+                  <th>Vehicle (Reg No / VIN)</th>
+                  <th>Customer</th>
+                  <th>Service Type</th>
+                  <th>Allocated Bay</th>
+                  <th>Assigned Technician</th>
+                  <th>Scheduled Time</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="appointments-table-body">
+                <tr><td colspan="8" class="text-center">Loading appointments...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 3: Resource Matrix (Bays & Technicians) -->
+    <section id="tab-resources" class="tab-content">
+      <div class="two-column-layout">
+        <!-- Bays List -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Service Bays & Equipment</h2>
+            <p>Physical workshop capacity and technical specs.</p>
+          </div>
+          <div class="card-body" id="bays-list-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Technicians List -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Technicians & Certified Competencies</h2>
+            <p>Active workshop personnel and certified domain skills.</p>
+          </div>
+          <div class="card-body" id="techs-list-container">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 4: Concurrency Simulator -->
+    <section id="tab-simulation" class="tab-content">
+      <div class="card simulation-card">
+        <div class="card-header">
+          <h2>⚡ Concurrency & Double-Booking Stress Test</h2>
+          <p>Simulate two concurrent clients attempting to book the identical last EV Bay slot at the exact same millisecond.</p>
+        </div>
+        <div class="card-body">
+          <div class="sim-instructions">
+            <p>This automated test demonstrates the system's <strong>ACID transactional isolation</strong>. Two asynchronous booking requests are fired in parallel for the exact same slot, Bay, and Technician:</p>
+            <ul>
+              <li><strong>User A (Customer Portal)</strong>: Submits reservation for 10:00 AM EV Battery diagnostic.</li>
+              <li><strong>User B (Service Advisor Desk)</strong>: Concurrently submits reservation for the same 10:00 AM slot.</li>
+            </ul>
+          </div>
+
+          <div class="sim-control-box">
+            <button id="run-simulation-btn" class="accent-btn">
+              <span>🚀 Fire Concurrent Requests (Simulate Race Condition)</span>
+            </button>
+          </div>
+
+          <div id="sim-results" class="sim-results-grid hidden">
+            <div id="sim-user-a" class="sim-card">
+              <h3>Client A (User 1)</h3>
+              <div class="sim-status">Pending</div>
+              <div class="sim-body"></div>
+            </div>
+            <div id="sim-user-b" class="sim-card">
+              <h3>Client B (User 2)</h3>
+              <div class="sim-status">Pending</div>
+              <div class="sim-body"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <p>Keyloop Technical Assessment — <strong>Scenario A: The Unified Service Scheduler</strong></p>
+      <p class="tech-stack-tag">Built with ASP.NET Core Clean Architecture • CQRS • SQLite Persistent Storage • Modern Frontend</p>
+    </div>
+  </footer>
+
+  <script src="app.js?v=2.0"></script>
+</body>
+</html>
