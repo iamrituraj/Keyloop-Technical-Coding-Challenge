@@ -116,24 +116,31 @@ Keyloop.Scheduler/
 
 ## 🚀 Quick Start Guide
 
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/iamrituraj/Keyloop-Technical-Coding-Challenge.git
+cd Keyloop-Technical-Coding-Challenge
+```
+
+---
+
 ### Option 1: Run with Docker & Docker Compose (Recommended — Zero Host Setup)
 
 Requires only [Docker](https://www.docker.com/). The multi-stage Docker build automatically restores dependencies, builds the C# solution, executes the xUnit test suite, and starts the ASP.NET Core API with SQLite persistence:
 
 ```bash
-# 1. Navigate to the project root
-cd /Users/riturajrajput/Documents/Keyloop
-
-# 2. Build image, execute tests, and run container
+# Build image, execute test suite, and start container
 docker compose up --build
 ```
 
 Once running:
-- **Interactive Web App & Dispatch Board**: Open [http://localhost:5001](http://localhost:5001)
-- **REST API Base**: `http://localhost:5001/api/v1`
-- **Database**: Automatically seeds persistent SQLite storage in `./data/scheduler.db`
+- **Interactive Web App & Dispatch Board**: [http://localhost:5001](http://localhost:5001)
+- **Interactive Swagger UI**: [http://localhost:5001/swagger](http://localhost:5001/swagger)
+- **REST API Base URL**: `http://localhost:5001/api/v1`
+- **Persistent Database**: Automatically created and seeded in `./data/scheduler.db`
 
-To run tests independently via Docker:
+To run the automated test suite independently via Docker:
 ```bash
 docker build --target build -t keyloop-tests .
 ```
@@ -147,12 +154,17 @@ docker build --target build -t keyloop-tests .
 dotnet restore
 dotnet build
 
-# 2. Run xUnit automated test suite
+# 2. Execute xUnit automated test suite
 dotnet test
 
-# 3. Launch Web API
-dotnet run --project src/Keyloop.Scheduler.Api
+# 3. Launch Web API on port 5001
+dotnet run --project src/Keyloop.Scheduler.Api --urls "http://localhost:5001"
 ```
+
+Once running:
+- **Interactive Web App & Dispatch Board**: [http://localhost:5001](http://localhost:5001)
+- **Interactive Swagger UI**: [http://localhost:5001/swagger](http://localhost:5001/swagger)
+- **REST API Base URL**: `http://localhost:5001/api/v1`
 
 ## 🧪 Testing Suite & Business Logic Validation
 
