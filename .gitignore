@@ -19,6 +19,3 @@ obj/
 TestResults/
 coverage*.json
 coverage*.xml
-
-# Video submission scripts / notes
-VIDEO_SUBMISSION_SCRIPT.md
